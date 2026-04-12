@@ -34,20 +34,24 @@ class PeriksaController extends Controller
     /**
      * Show examination form for a patient.
      */
-    public function show(DaftarPoli $daftarPoli)
-    {
-        // Verify this patient is registered with this doctor
-        $dokter_id = auth()->user()->id;
-        if ($daftarPoli->jadwalPeriksa->id_dokter != $dokter_id) {
-            abort(403);
-        }
-
-        // Get existing examination if any
-        $periksa = $daftarPoli->periksa;
-
-        return view('dokter.periksa.show', compact('daftarPoli', 'periksa'));
+    public function show($dokter, DaftarPoli $periksa)
+{
+    // 1. Pengecekan relasi (mencegah error null)
+    if (!$periksa->jadwalPeriksa) {
+        abort(404, 'Data Jadwal Periksa tidak ditemukan.');
     }
 
+    $dokter_id = auth()->user()->id;
+    
+    // 2. Pengecekan hak akses (agar dokter lain tidak bisa melihat)
+    if ($periksa->jadwalPeriksa->id_dokter != $dokter_id) {
+        abort(403, 'Unauthorized action.');
+    }
+
+    // 3. INI YANG PALING PENTING: Tampilkan halamannya!
+    // (Pastikan tidak ada tanda // di depannya)
+    return view('dokter.periksa.show', compact('periksa', 'dokter'));
+}
     /**
      * Store a new examination record.
      */

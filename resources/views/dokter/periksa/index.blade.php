@@ -55,10 +55,10 @@
                                         <p class="text-xs text-gray-400">{{ $daftar->jadwalPeriksa->jam_mulai }} – {{ $daftar->jadwalPeriksa->jam_selesai }}</p>
                                     </td>
                                     <td class="px-5 py-3 text-center">
-                                        <a href="{{ route('dokter.periksa.show', $daftar) }}"
-                                            class="inline-flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors">
-                                            <i class="fas fa-stethoscope"></i> Periksa
-                                        </a>
+                                        <a href="{{ route('dokter.periksa.show', ['dokter' => request()->route('dokter'), 'periksa' => $daftar->id]) }}"
+                                        class="inline-flex items-center gap-1 bg-blue-600 text-white hover:bg-blue-700 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors">
+                                        <i class="fas fa-stethoscope"></i> Periksa
+                                    </a>
                                     </td>
                                 </tr>
                             @endforeach
