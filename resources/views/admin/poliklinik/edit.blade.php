@@ -12,20 +12,23 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <form action="{{ route('poliklinik.update', $poli->id) }}" method="POST" class="space-y-5">
+            <form action="{{ route('poliklinik.update', $poli) }}" method="POST" class="space-y-5">
                 @csrf
                 @method('PUT')
                 <div>
-                    <label for="nama_poli" class="block text-sm font-semibold text-gray-700 mb-1">Nama Poliklinik <span class="text-red-500">*</span></label>
-                    <input type="text" name="nama_poli" id="nama_poli" value="{{ old('nama_poli', $poli->nama_poli) }}" required
+                    <label for="nama_poli" class="block text-sm font-semibold text-gray-700 mb-1">Nama Poliklinik <span
+                            class="text-red-500">*</span></label>
+                    <input type="text" name="nama_poli" id="nama_poli" value="{{ old('nama_poli', $poli->nama_poli) }}"
+                        required
                         class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('nama_poli') border-red-400 bg-red-50 @enderror">
                     @error('nama_poli') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label for="deskripsi" class="block text-sm font-semibold text-gray-700 mb-1">Deskripsi <span class="text-red-500">*</span></label>
-                    <textarea name="deskripsi" id="deskripsi" rows="4" required
-                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all resize-none @error('deskripsi') border-red-400 bg-red-50 @enderror">{{ old('deskripsi', $poli->deskripsi) }}</textarea>
-                    @error('deskripsi') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    <label for="keterangan" class="block text-sm font-semibold text-gray-700 mb-1">Keterangan <span
+                            class="text-red-500">*</span></label>
+                    <textarea name="keterangan" id="keterangan" rows="4"
+                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all resize-none @error('keterangan') border-red-400 bg-red-50 @enderror">{{ old('keterangan', $poli->keterangan) }}</textarea>
+                    @error('keterangan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex items-center gap-3 pt-2">
                     <button type="submit"

@@ -88,23 +88,28 @@ class DokterController extends Controller
             'no_hp' => 'required|string|max:15',
             'id_poli' => 'required|exists:poli,id',
             'email' => 'required|email|unique:users,email,' . $dokter->id,
-            'password' => 'required|string|min:6',
+            'password' => 'nullable|string|min:6',
         ]);
 
-            $dokter->update([
-                'name' => $request->name,
-                'alamat' => $request->alamat,
-                'no_ktp' => $request->no_ktp,
-                'no_hp' => $request->no_hp,
-                'id_poli' => $request->id_poli,
-                'email' => $request->email,
-                'password' => $request->password,
-                'role' => 'dokter',
-            ]);
+        $update_data = [
+            'name' => $request->name,
+            'alamat' => $request->alamat,
+            'no_ktp' => $request->no_ktp,
+            'no_hp' => $request->no_hp,
+            'id_poli' => $request->id_poli,
+            'email' => $request->email,
+            'role' => 'dokter',
+        ];
 
-            return redirect()->route('dokter.index')
-                ->with('message', 'Dokter berhasil diupdate.')
-                ->with('type', 'success');
+        if ($request->filled('password')) {
+            $update_data['password'] = $request->password;
+        }
+
+        $dokter->update($update_data);
+
+        return redirect()->route('dokter.index')
+            ->with('message', 'Dokter berhasil diupdate.')
+            ->with('type', 'success');
     }
 
     /**

@@ -57,15 +57,15 @@ class ObatController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Obat $obat)
     {
-        //
+        return view('admin.obat.edit', compact('obat'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Obat $obat)
     {
         $request->validate([
             'nama_obat' => 'required|string|max:255',
@@ -73,24 +73,26 @@ class ObatController extends Controller
             'harga' => 'required|numeric|min:0',
         ]);
 
-        $obat = Obat::find($id);
         $obat->update([
             'nama_obat' => $request->nama_obat,
             'kemasan' => $request->kemasan,
             'harga' => $request->harga,
         ]);
 
-        return redirect()->route('obat.index')->with('status', 'obat-updated');
+        return redirect()->route('obat.index')
+            ->with('message', 'Obat berhasil diupdate.')
+            ->with('type', 'success');
     }
     
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Obat $obat)
     {
-        $obat = Obat::find($id);
         $obat->delete();
 
-        return redirect()->route('admin.obat.index');
+        return redirect()->route('obat.index')
+            ->with('message', 'Obat berhasil dihapus.')
+            ->with('type', 'success');
     }
 }

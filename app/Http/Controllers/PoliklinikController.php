@@ -55,22 +55,22 @@ class PoliklinikController extends Controller
     /**
      * Show the form for editing the clinic.
      */
-    public function edit(Poli $poli)
+    public function edit(Poli $poliklinik)
     {
-        return view('admin.poliklinik.edit', compact('poli'));
+        return view('admin.poliklinik.edit', ['poli' => $poliklinik]);
     }
 
     /**
      * Update the specified clinic in database.
      */
-    public function update(Request $request, Poli $poli)
+    public function update(Request $request, Poli $poliklinik)
     {
         $request->validate([
-            'nama_poli' => 'required|string|max:255|unique:poli,nama_poli,' . $poli->id,
+            'nama_poli' => 'required|string|max:255|unique:poli,nama_poli,' . $poliklinik->id . ',id',
             'keterangan' => 'nullable|string',
         ]);
 
-        $poli->update([
+        $poliklinik->update([
             'nama_poli' => $request->nama_poli,
             'keterangan' => $request->keterangan,
         ]);
@@ -83,9 +83,9 @@ class PoliklinikController extends Controller
     /**
      * Remove the specified clinic from database.
      */
-    public function destroy(Poli $poli)
+    public function destroy(Poli $poliklinik)
     {
-        $poli->delete();
+        $poliklinik->delete();
 
         return redirect()->route('poliklinik.index')
             ->with('message', 'Poliklinik berhasil dihapus.')
