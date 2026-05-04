@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dokter;
 use App\Http\Controllers\Controller;
 use App\Models\DaftarPoli;
 use App\Models\Periksa;
+use App\Events\QueueUpdated;
 use Illuminate\Http\Request;
 
 class PeriksaController extends Controller
@@ -12,7 +13,7 @@ class PeriksaController extends Controller
     /**
      * Display list of pending examinations for dokter.
      */
-    public function index()
+    public function index($dokter = null)
     {
         $dokter_id = auth()->user()->id;
 
@@ -34,53 +35,79 @@ class PeriksaController extends Controller
     /**
      * Show examination form for a patient.
      */
-    public function show($dokter, DaftarPoli $periksa)
-{
-    // 1. Pengecekan relasi (mencegah error null)
-    if (!$periksa->jadwalPeriksa) {
-        abort(404, 'Data Jadwal Periksa tidak ditemukan.');
-    }
+    public function show($dokter, $periksaId)
+    {
+        // Binding manual untuk menghindari mismatch nama parameter vs tabel
+        $daftarPoli = DaftarPoli::with(['pasien', 'jadwalPeriksa.dokter.poli'])->findOrFail($periksaId);
 
-    $dokter_id = auth()->user()->id;
-    
-    // 2. Pengecekan hak akses (agar dokter lain tidak bisa melihat)
-    if ($periksa->jadwalPeriksa->id_dokter != $dokter_id) {
-        abort(403, 'Unauthorized action.');
-    }
+        // 1. Pengecekan relasi
+        if (!$daftarPoli->jadwalPeriksa) {
+            abort(404, 'Data Jadwal Periksa tidak ditemukan.');
+        }
 
-    // 3. INI YANG PALING PENTING: Tampilkan halamannya!
-    // (Pastikan tidak ada tanda // di depannya)
-    return view('dokter.periksa.show', compact('periksa', 'dokter'));
-}
+        $dokter_id = auth()->user()->id;
+
+        // 2. Pengecekan hak akses
+        if ($daftarPoli->jadwalPeriksa->id_dokter != $dokter_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 3. Cari hasil pemeriksaan jika sudah ada
+        $hasilPeriksa = \App\Models\Periksa::with('detailPeriksa.obat')
+            ->where('id_daftar_poli', $daftarPoli->id)
+            ->first();
+
+        // 4. Kirim ke view
+        return view('dokter.periksa.show', [
+            'daftarPoli' => $daftarPoli,
+            'periksa' => $hasilPeriksa,
+            'dokter' => $dokter,
+        ]);
+    }
     /**
      * Store a new examination record.
      */
-    public function store(Request $request, DaftarPoli $daftarPoli)
+    public function store(Request $request, $dokter_id) // 👈 Ubah parameter di sini
     {
-        // Verify this patient is registered with this doctor
-        $dokter_id = auth()->user()->id;
-        if ($daftarPoli->jadwalPeriksa->id_dokter != $dokter_id) {
-            abort(403);
-        }
-
-        // Check if already examined
-        if ($daftarPoli->periksa) {
-            return redirect()->back()->with('message', 'Pasien ini sudah diperiksa!')->with('type', 'warning');
-        }
-
+        // 1. Validasi input, pastikan id_daftar_poli ikut dikirim
         $request->validate([
+            'id_daftar_poli' => 'required|exists:daftar_poli,id',
             'catatan' => 'required|string|min:10',
             'biaya_periksa' => 'nullable|numeric|min:0',
         ]);
 
-        $periksa = Periksa::create([
+        // 2. Cari DaftarPoli secara manual berdasarkan input hidden
+        $daftarPoli = \App\Models\DaftarPoli::findOrFail($request->id_daftar_poli);
+
+        // 3. Verify this patient is registered with this doctor
+        $auth_dokter_id = auth()->user()->id;
+        if ($daftarPoli->jadwalPeriksa->id_dokter != $auth_dokter_id) {
+            abort(403);
+        }
+
+        // 4. Check if already examined
+        if ($daftarPoli->periksa) {
+            return redirect()->back()->with('message', 'Pasien ini sudah diperiksa!')->with('type', 'warning');
+        }
+
+        // 5. Simpan Hasil Pemeriksaan
+        $periksa = \App\Models\Periksa::create([
             'id_daftar_poli' => $daftarPoli->id,
             'tgl_periksa' => now()->toDateString(),
             'catatan' => $request->catatan,
             'biaya_periksa' => $request->biaya_periksa ?? 0,
         ]);
 
-        return redirect()->route('dokter.periksa.show', $periksa->id)
+        // ─── Broadcast real-time antrian update ──────────────────────────────
+        try {
+            $noDilayani = $daftarPoli->no_antrian;
+            \App\Events\QueueUpdated::dispatch($daftarPoli->id_jadwal, $noDilayani);
+        } catch (\Throwable $e) {
+            // Reverb might not be running — silently fail
+        }
+
+        // 6. Redirect kembali ke halaman show dengan 2 parameter (dokter & daftar_poli)
+        return redirect()->route('dokter.periksa.show', [$auth_dokter_id, $daftarPoli->id])
             ->with('message', 'Pemeriksaan berhasil dicatat. Sekarang tambahkan resep obat.')
             ->with('type', 'success');
     }
@@ -88,11 +115,11 @@ class PeriksaController extends Controller
     /**
      * Update examination record.
      */
-    public function update(Request $request, Periksa $periksa)
+    public function update(Request $request, $dokter_id, Periksa $periksa)
     {
-        // Verify ownership
-        $dokter_id = auth()->user()->id;
-        if ($periksa->daftarPoli->jadwalPeriksa->id_dokter != $dokter_id) {
+        // Verify ownership (gunakan variabel baru agar tidak bentrok)
+        $auth_dokter_id = auth()->user()->id;
+        if ($periksa->daftarPoli->jadwalPeriksa->id_dokter != $auth_dokter_id) {
             abort(403);
         }
 
@@ -114,11 +141,11 @@ class PeriksaController extends Controller
     /**
      * Edit examination form.
      */
-    public function edit(Periksa $periksa)
+    public function edit($dokter_id, Periksa $periksa)
     {
-        // Verify ownership
-        $dokter_id = auth()->user()->id;
-        if ($periksa->daftarPoli->jadwalPeriksa->id_dokter != $dokter_id) {
+        // Verify ownership menggunakan auth()
+        $auth_dokter_id = auth()->user()->id;
+        if ($periksa->daftarPoli->jadwalPeriksa->id_dokter != $auth_dokter_id) {
             abort(403);
         }
 

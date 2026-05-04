@@ -15,10 +15,10 @@ class DaftarPoliController extends Controller
     public function index()
     {
         $daftars = DaftarPoli::where('id_pasien', auth()->user()->id)
-            ->with(['jadwalPeriksa.dokter', 'jadwalPeriksa.poli', 'periksa'])
+            ->with(['jadwalPeriksa.dokter', 'jadwalPeriksa.dokter.poli', 'periksa'])
             ->orderByDesc('created_at')
             ->get();
-        
+
         return view('pasien.daftar-poli.index', compact('daftars'));
     }
 
@@ -27,14 +27,18 @@ class DaftarPoliController extends Controller
      */
     public function create()
     {
-        $jadwals = JadwalPeriksa::where('id_dokter', '!=', null)
+        // Check if patient already has active queue — if so, block registration
+        $hasActiveQueue = DaftarPoli::where('id_pasien', auth()->user()->id)
+            ->doesntHave('periksa')
+            ->exists();
+
+        $jadwals = JadwalPeriksa::where('status', 'aktif')
+            ->whereNotNull('id_dokter')
             ->with(['dokter', 'dokter.poli'])
             ->get()
-            ->groupBy(function ($item) {
-                return $item->dokter->poli->nama_poli ?? 'Tanpa Poli';
-            });
-        
-        return view('pasien.daftar-poli.create', compact('jadwals'));
+            ->groupBy(fn($item) => $item->dokter->poli->nama_poli ?? 'Tanpa Poli');
+
+        return view('pasien.daftar-poli.create', compact('jadwals', 'hasActiveQueue'));
     }
 
     /**
@@ -44,33 +48,43 @@ class DaftarPoliController extends Controller
     {
         $request->validate([
             'id_jadwal' => 'required|exists:jadwal_periksa,id',
-            'keluhan' => 'required|string',
+            'keluhan'   => 'required|string',
         ]);
 
-        // Check if already registered
-        $check = DaftarPoli::where('id_pasien', auth()->user()->id)
+        // ─── CEGAH DAFTAR KE DUA POLI SEKALIGUS ────────────────────────────
+        $hasActiveQueue = DaftarPoli::where('id_pasien', auth()->user()->id)
+            ->doesntHave('periksa')
+            ->exists();
+
+        if ($hasActiveQueue) {
+            return redirect()->back()
+                ->with('message', 'Anda masih memiliki antrian aktif. Selesaikan pemeriksaan terlebih dahulu sebelum mendaftar ke poli lain.')
+                ->with('type', 'warning');
+        }
+
+        // Check if already registered to the exact same schedule
+        $alreadyRegistered = DaftarPoli::where('id_pasien', auth()->user()->id)
             ->where('id_jadwal', $request->id_jadwal)
             ->exists();
-        
-        if ($check) {
+
+        if ($alreadyRegistered) {
             return redirect()->back()
                 ->with('message', 'Anda sudah terdaftar untuk jadwal ini!')
                 ->with('type', 'warning');
         }
 
-        // Get queue number
-        $queue = DaftarPoli::where('id_jadwal', $request->id_jadwal)
-            ->max('no_antrian') ?? 0;
+        // Get next queue number for this schedule
+        $nextQueue = (DaftarPoli::where('id_jadwal', $request->id_jadwal)->max('no_antrian') ?? 0) + 1;
 
         DaftarPoli::create([
-            'id_jadwal' => $request->id_jadwal,
-            'id_pasien' => auth()->user()->id,
-            'keluhan' => $request->keluhan,
-            'no_antrian' => $queue + 1,
+            'id_jadwal'  => $request->id_jadwal,
+            'id_pasien'  => auth()->user()->id,
+            'keluhan'    => $request->keluhan,
+            'no_antrian' => $nextQueue,
         ]);
 
         return redirect()->route('pasien.daftar-poli.index')
-            ->with('message', 'Registrasi berhasil! Nomor antrian Anda tercatat.')
+            ->with('message', "Registrasi berhasil! Nomor antrian Anda: {$nextQueue}")
             ->with('type', 'success');
     }
 
@@ -83,7 +97,7 @@ class DaftarPoliController extends Controller
         if ($daftarPoli->id_pasien != auth()->user()->id) {
             abort(403);
         }
-        
+
         return view('pasien.daftar-poli.show', compact('daftarPoli'));
     }
 }

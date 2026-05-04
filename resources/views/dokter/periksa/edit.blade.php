@@ -41,7 +41,7 @@
                 <h2 class="font-bold text-white text-sm"><i class="fas fa-edit mr-2"></i>Edit Hasil Pemeriksaan</h2>
             </div>
             <div class="p-5">
-                <form action="{{ route('dokter.periksa.update', $periksa) }}" method="POST" class="space-y-5">
+                <form action="{{ route('dokter.periksa.update', [auth()->id(), $periksa->id]) }}" method="POST" class="space-y-5">
                     @csrf
                     @method('PUT')
 
@@ -94,7 +94,7 @@
 
                         {{-- Tambah Obat --}}
                         <div class="bg-gray-50 rounded-xl p-3">
-                            <form action="{{ route('dokter.periksa.detail.store', $periksa) }}" method="POST" class="flex gap-2">
+                            <form action="{{ route('dokter.periksa.detail.store', [auth()->id(), $periksa->id]) }}" method="POST" class="flex gap-2">
                                 @csrf
                                 <select name="id_obat" required
                                     class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 transition-all bg-white">

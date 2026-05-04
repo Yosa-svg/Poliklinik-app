@@ -107,7 +107,7 @@
                                         @endif
                                     </td>
                                     <td class="px-5 py-3 text-center">
-                                        <a href="{{ route('dokter.periksa.edit', $daftar->periksa) }}"
+                                        <a href="{{ route('dokter.periksa.edit', [auth()->id(), $daftar->periksa->id]) }}"
                                             class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 hover:bg-amber-200 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>

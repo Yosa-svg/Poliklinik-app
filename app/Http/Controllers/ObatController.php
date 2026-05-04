@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Obat;
+use App\Exports\ObatExport;
 
 class ObatController extends Controller
 {
@@ -12,7 +13,7 @@ class ObatController extends Controller
      */
     public function index()
     {
-        $obats = Obat::all();
+        $obats = Obat::orderBy('nama_obat')->get();
         return view('admin.obat.index')->with([
             'obats' => $obats,
         ]);
@@ -28,19 +29,21 @@ class ObatController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     */ 
+     */
     public function store(Request $request)
     {
         $request->validate([
             'nama_obat' => 'required|string|max:255',
-            'kemasan' => 'required|string|max:255',
-            'harga' => 'required|numeric|min:0',
+            'kemasan'   => 'required|string|max:255',
+            'harga'     => 'required|numeric|min:0',
+            'stok'      => 'required|integer|min:0',
         ]);
 
         Obat::create([
             'nama_obat' => $request->nama_obat,
-            'kemasan' => $request->kemasan,
-            'harga' => $request->harga,
+            'kemasan'   => $request->kemasan,
+            'harga'     => $request->harga,
+            'stok'      => $request->stok,
         ]);
 
         return redirect()->route('obat.index')->with('status', 'obat-created');
@@ -69,21 +72,23 @@ class ObatController extends Controller
     {
         $request->validate([
             'nama_obat' => 'required|string|max:255',
-            'kemasan' => 'required|string|max:255',
-            'harga' => 'required|numeric|min:0',
+            'kemasan'   => 'required|string|max:255',
+            'harga'     => 'required|numeric|min:0',
+            'stok'      => 'required|integer|min:0',
         ]);
 
         $obat->update([
             'nama_obat' => $request->nama_obat,
-            'kemasan' => $request->kemasan,
-            'harga' => $request->harga,
+            'kemasan'   => $request->kemasan,
+            'harga'     => $request->harga,
+            'stok'      => $request->stok,
         ]);
 
         return redirect()->route('obat.index')
             ->with('message', 'Obat berhasil diupdate.')
             ->with('type', 'success');
     }
-    
+
     /**
      * Remove the specified resource from storage.
      */
@@ -94,5 +99,13 @@ class ObatController extends Controller
         return redirect()->route('obat.index')
             ->with('message', 'Obat berhasil dihapus.')
             ->with('type', 'success');
+    }
+
+    /**
+     * Export obat list to Excel.
+     */
+    public function export()
+    {
+        return (new ObatExport)->download();
     }
 }

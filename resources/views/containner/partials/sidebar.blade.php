@@ -47,6 +47,9 @@
                 <x-nav-link href="{{ route('obat.index') }}" :active="request()->routeIs('obat.*')" icon="fas fa-pills">
                     Obat
                 </x-nav-link>
+                <x-nav-link href="{{ route('admin.pembayaran.index') }}" :active="request()->routeIs('admin.pembayaran.*')" icon="fas fa-check-circle">
+                    Verifikasi Pembayaran
+                </x-nav-link>
 
             @elseif(auth()->user()->role === 'dokter')
                 <p class="px-3 text-xs font-bold text-blue-400 uppercase tracking-widest mb-2 mt-1">Menu Dokter</p>
@@ -73,8 +76,14 @@
                 <x-nav-link href="{{ route('pasien.daftar-poli.index') }}" :active="request()->routeIs('pasien.daftar-poli.*')" icon="fas fa-clipboard-list">
                     Pendaftaran
                 </x-nav-link>
+                <x-nav-link href="{{ route('pasien.riwayat.index') }}" :active="request()->routeIs('pasien.riwayat.*')" icon="fas fa-history">
+                    Riwayat Pendaftaran
+                </x-nav-link>
                 <x-nav-link href="{{ route('pasien.periksa.index') }}" :active="request()->routeIs('pasien.periksa.*')" icon="fas fa-file-medical-alt">
                     Hasil Pemeriksaan
+                </x-nav-link>
+                <x-nav-link href="{{ route('pasien.pembayaran.index') }}" :active="request()->routeIs('pasien.pembayaran.*')" icon="fas fa-credit-card">
+                    Pembayaran
                 </x-nav-link>
             @endif
         @endauth

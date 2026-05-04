@@ -7,10 +7,20 @@
             </h1>
             <p class="text-gray-500 text-sm mt-1">Kelola jadwal pemeriksaan Anda.</p>
         </div>
-        <a href="{{ route('jadwal-periksa.create') }}"
-            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
-            <i class="fas fa-plus"></i> Tambah Jadwal
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('riwayat-pasien.export') }}"
+                class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                <i class="fas fa-file-excel"></i> Export Riwayat
+            </a>
+            <a href="{{ route('jadwal-periksa.export') }}"
+                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                <i class="fas fa-file-excel"></i> Export Jadwal
+            </a>
+            <a href="{{ route('jadwal-periksa.create') }}"
+                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                <i class="fas fa-plus"></i> Tambah Jadwal
+            </a>
+        </div>
     </div>
 
     <x-flash-alert />

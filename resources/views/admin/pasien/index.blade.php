@@ -7,6 +7,12 @@
             </h1>
             <p class="text-gray-500 text-sm mt-1">Daftar seluruh pasien terdaftar.</p>
         </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('pasien.export') }}"
+                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+        </div>
     </div>
 
     <x-flash-alert />

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Poli;
 use Illuminate\Http\Request;
+use App\Exports\PasienExport;
 
 class PasienController extends Controller
 {
@@ -127,5 +128,13 @@ class PasienController extends Controller
         return redirect()->route('pasien.index')
             ->with('message', 'Pasien berhasil dihapus.')
             ->with('type', 'success');
+    }
+
+    /**
+     * Export patient list to Excel.
+     */
+    public function export()
+    {
+        return (new PasienExport)->download();
     }
 }

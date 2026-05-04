@@ -30,11 +30,19 @@
                     </div>
                 </div>
 
-                <div>
-                    <label for="harga" class="block text-sm font-semibold text-gray-700 mb-1">Harga (Rp) <span class="text-red-500">*</span></label>
-                    <input type="number" name="harga" id="harga" value="{{ old('harga') }}" required min="0" step="1"
-                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('harga') border-red-400 bg-red-50 @enderror">
-                    @error('harga') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label for="harga" class="block text-sm font-semibold text-gray-700 mb-1">Harga (Rp) <span class="text-red-500">*</span></label>
+                        <input type="number" name="harga" id="harga" value="{{ old('harga') }}" required min="0" step="1"
+                            class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('harga') border-red-400 bg-red-50 @enderror">
+                        @error('harga') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="stok" class="block text-sm font-semibold text-gray-700 mb-1">Stok Awal <span class="text-red-500">*</span></label>
+                        <input type="number" name="stok" id="stok" value="{{ old('stok', 0) }}" required min="0"
+                            class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('stok') border-red-400 bg-red-50 @enderror">
+                        @error('stok') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3 pt-2">

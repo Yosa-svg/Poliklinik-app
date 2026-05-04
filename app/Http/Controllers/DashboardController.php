@@ -6,25 +6,23 @@ use App\Models\User;
 use App\Models\Poli;
 use App\Models\DaftarPoli;
 use App\Models\Periksa;
+use App\Models\JadwalPeriksa;
 
 class DashboardController extends Controller
 {
     // ─── Admin Dashboard ──────────────────────────────────────────────────────
     public function adminDashboard()
     {
-
         try {
             $totalPoli = Poli::count();
             $totalDokter = User::where('role', 'dokter')->count();
             $totalPasien = User::where('role', 'pasien')->count();
             $totalPemeriksaan = Periksa::count();
-            
-            // Patients registered last 30 days
+
             $lastMonthPatients = User::where('role', 'pasien')
                 ->where('created_at', '>=', now()->subDays(30))
                 ->count();
-            
-            // Examinations by clinic
+
             $pemeriksaanByClinic = Poli::select('poli.id', 'poli.nama_poli')
                 ->selectRaw('COUNT(periksa.id) as count')
                 ->leftJoin('users as dokter', 'dokter.id_poli', '=', 'poli.id')
@@ -35,45 +33,31 @@ class DashboardController extends Controller
                 ->orderByDesc('count')
                 ->limit(5)
                 ->get()
-                ->map(function ($poli) {
-                    return [
-                        'name' => $poli->nama_poli,
-                        'count' => $poli->count
-                    ];
-                });
-            
-            // Recent activity (latest registrations)
+                ->map(fn($poli) => ['name' => $poli->nama_poli, 'count' => $poli->count]);
+
             $recentRegistrations = DaftarPoli::with(['pasien', 'jadwalPeriksa.dokter.poli'])
                 ->orderByDesc('created_at')
                 ->limit(5)
                 ->get();
-            
-            // Recent examinations
+
             $recentExaminations = Periksa::with(['daftarPoli.pasien', 'daftarPoli.jadwalPeriksa.dokter.poli'])
                 ->orderByDesc('created_at')
                 ->limit(5)
                 ->get();
 
+            $pendingPayments = Periksa::where('status_bayar', 'menunggu_verifikasi')->count();
+
             return view('admin.dashboard', compact(
-                'totalPoli',
-                'totalDokter',
-                'totalPasien',
-                'totalPemeriksaan',
-                'lastMonthPatients',
-                'pemeriksaanByClinic',
-                'recentRegistrations',
-                'recentExaminations'
+                'totalPoli', 'totalDokter', 'totalPasien', 'totalPemeriksaan',
+                'lastMonthPatients', 'pemeriksaanByClinic', 'recentRegistrations',
+                'recentExaminations', 'pendingPayments'
             ));
         } catch (\Exception $e) {
             return view('admin.dashboard', [
-                'totalPoli' => 0,
-                'totalDokter' => 0,
-                'totalPasien' => 0,
-                'totalPemeriksaan' => 0,
-                'lastMonthPatients' => 0,
-                'pemeriksaanByClinic' => collect([]),
-                'recentRegistrations' => collect([]),
-                'recentExaminations' => collect([])
+                'totalPoli' => 0, 'totalDokter' => 0, 'totalPasien' => 0,
+                'totalPemeriksaan' => 0, 'lastMonthPatients' => 0,
+                'pemeriksaanByClinic' => collect([]), 'recentRegistrations' => collect([]),
+                'recentExaminations' => collect([]), 'pendingPayments' => 0,
             ]);
         }
     }
@@ -83,33 +67,26 @@ class DashboardController extends Controller
     {
         try {
             $dokter = auth()->user();
-            
-            // Get doctor's jadwal IDs
             $jadwalIds = $dokter->jadwalPeriksa()->pluck('id')->toArray();
-            
-            // My examined patients this month
+
             $periksasThisMonth = Periksa::whereYear('tgl_periksa', date('Y'))
                 ->whereMonth('tgl_periksa', date('m'))
                 ->whereIn('id_daftar_poli', DaftarPoli::whereIn('id_jadwal', $jadwalIds)->pluck('id'))
                 ->count();
-            
-            // Pending examinations
+
             $pendingExaminations = DaftarPoli::whereIn('id_jadwal', $jadwalIds)
                 ->doesntHave('periksa')
                 ->count();
-            
-            // All examinations
-            $totalExaminations = Periksa::whereIn('id_daftar_poli', 
+
+            $totalExaminations = Periksa::whereIn('id_daftar_poli',
                 DaftarPoli::whereIn('id_jadwal', $jadwalIds)->pluck('id')
             )->count();
-            
-            // Revenue this month
+
             $revenueThisMonth = Periksa::whereYear('tgl_periksa', date('Y'))
                 ->whereMonth('tgl_periksa', date('m'))
                 ->whereIn('id_daftar_poli', DaftarPoli::whereIn('id_jadwal', $jadwalIds)->pluck('id'))
                 ->sum('biaya_periksa') ?? 0;
-            
-            // Most common complaints
+
             $commonComplaints = DaftarPoli::whereIn('id_jadwal', $jadwalIds)
                 ->whereNotNull('keluhan')
                 ->selectRaw('keluhan, COUNT(*) as count')
@@ -120,18 +97,13 @@ class DashboardController extends Controller
                 ->pluck('count', 'keluhan');
 
             return view('dokter.dashboard', compact(
-                'periksasThisMonth',
-                'pendingExaminations',
-                'totalExaminations',
-                'revenueThisMonth',
-                'commonComplaints'
+                'periksasThisMonth', 'pendingExaminations', 'totalExaminations',
+                'revenueThisMonth', 'commonComplaints'
             ));
         } catch (\Exception $e) {
             return view('dokter.dashboard', [
-                'periksasThisMonth' => 0,
-                'pendingExaminations' => 0,
-                'totalExaminations' => 0,
-                'revenueThisMonth' => 0,
+                'periksasThisMonth' => 0, 'pendingExaminations' => 0,
+                'totalExaminations' => 0, 'revenueThisMonth' => 0,
                 'commonComplaints' => collect([])
             ]);
         }
@@ -140,42 +112,51 @@ class DashboardController extends Controller
     // ─── Patient Dashboard ───────────────────────────────────────────────────
     public function pasienDashboard()
     {
-
         try {
             $pasien = auth()->user();
-            
-            // Total examinations
+
             $totalExaminations = Periksa::whereIn('id_daftar_poli',
                 DaftarPoli::where('id_pasien', $pasien->id)->pluck('id')
             )->count();
-            
-            // Last examination date
+
             $lastExamination = Periksa::whereIn('id_daftar_poli',
                 DaftarPoli::where('id_pasien', $pasien->id)->pluck('id')
-            )
-            ->orderByDesc('tgl_periksa')
-            ->first();
-            
-            // Doctor specialists visited
+            )->orderByDesc('tgl_periksa')->first();
+
             $doctorSpecialists = DaftarPoli::where('id_pasien', $pasien->id)
                 ->with('jadwalPeriksa.dokter.poli')
                 ->get()
                 ->pluck('jadwalPeriksa.dokter.poli.nama_poli')
-                ->unique()
-                ->values()
-                ->filter();
-            
-            // Next upcoming appointment (if any)
-            $nextAppointment = DaftarPoli::where('id_pasien', $pasien->id)
+                ->unique()->values()->filter();
+
+            // ─── ANTRIAN AKTIF PASIEN ─────────────────────────────────────
+            $activeQueue = DaftarPoli::where('id_pasien', $pasien->id)
                 ->whereNotNull('no_antrian')
-                ->with(['jadwalPeriksa.dokter.poli', 'periksa'])
-                ->get()
-                ->filter(function ($daftar) {
-                    return !$daftar->periksa; // Not yet examined
-                })
+                ->doesntHave('periksa')
+                ->with(['jadwalPeriksa.dokter.poli'])
+                ->latest()
                 ->first();
-            
-            // Recent exams
+
+            $noDilayani = 0;
+            if ($activeQueue) {
+                $noDilayani = DaftarPoli::where('id_jadwal', $activeQueue->id_jadwal)
+                    ->whereHas('periksa')
+                    ->max('no_antrian') ?? 0;
+            }
+
+            // ─── TABEL SEMUA JADWAL POLIKLINIK ───────────────────────────
+            $jadwalAll = JadwalPeriksa::where('status', 'aktif')
+                ->with(['dokter.poli'])
+                ->orderBy('hari')
+                ->orderBy('jam_mulai')
+                ->get()
+                ->map(function ($jadwal) {
+                    $jadwal->no_dilayani = DaftarPoli::where('id_jadwal', $jadwal->id)
+                        ->whereHas('periksa')
+                        ->max('no_antrian') ?? 0;
+                    return $jadwal;
+                });
+
             $recentExams = Periksa::whereIn('id_daftar_poli',
                 DaftarPoli::where('id_pasien', $pasien->id)->pluck('id')
             )
@@ -185,19 +166,15 @@ class DashboardController extends Controller
             ->get();
 
             return view('pasien.dashboard', compact(
-                'totalExaminations',
-                'lastExamination',
-                'doctorSpecialists',
-                'nextAppointment',
-                'recentExams'
+                'totalExaminations', 'lastExamination', 'doctorSpecialists',
+                'activeQueue', 'noDilayani', 'jadwalAll', 'recentExams'
             ));
         } catch (\Exception $e) {
             return view('pasien.dashboard', [
-                'totalExaminations' => 0,
-                'lastExamination' => null,
-                'doctorSpecialists' => collect([]),
-                'nextAppointment' => null,
-                'recentExams' => collect([])
+                'totalExaminations' => 0, 'lastExamination' => null,
+                'doctorSpecialists' => collect([]), 'activeQueue' => null,
+                'noDilayani' => null, 'jadwalAll' => collect([]),
+                'recentExams' => collect([]),
             ]);
         }
     }

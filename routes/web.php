@@ -13,9 +13,11 @@ use App\Http\Controllers\Dokter\DetailPeriksaController;
 use App\Http\Controllers\Pasien\PoliController;
 use App\Http\Controllers\Pasien\DaftarPoliController;
 use App\Http\Controllers\Pasien\PeriksaController as PasienPeriksaController;
+use App\Http\Controllers\Pasien\RiwayatController;
+use App\Http\Controllers\Pasien\PembayaranController as PasienPembayaranController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 
 Route::get('/', function () {
-    // Jika user sudah login, cek role-nya dan arahkan ke dashboard yang sesuai
     if (auth()->check()) {
         return match (auth()->user()->role) {
             'admin'  => redirect()->route('admin.dashboard'),
@@ -23,8 +25,6 @@ Route::get('/', function () {
             default  => redirect()->route('pasien.dashboard'),
         };
     }
-    
-    // Jika belum login, baru lempar ke form login
     return redirect()->route('login');
 });
 
@@ -44,27 +44,43 @@ Route::middleware(['auth', 'role:dokter'])->group(function () {
     Route::resource('jadwal-periksa', JadwalPeriksaController::class)->except('show');
     Route::resource('dokter.periksa', PeriksaController::class)->only(['index', 'show', 'store', 'edit', 'update']);
     Route::resource('dokter.periksa.detail', DetailPeriksaController::class)->only(['index', 'store', 'destroy']);
+
+    // Export Excel
+    Route::get('/jadwal-periksa/export/excel', [JadwalPeriksaController::class, 'export'])->name('jadwal-periksa.export');
+    Route::get('/riwayat-pasien/export/excel', [JadwalPeriksaController::class, 'exportRiwayat'])->name('riwayat-pasien.export');
 });
 
-// ─── Pasien (PINDAHKAN KE ATAS ADMIN) ────────────────────────────────────────
+// ─── Pasien ───────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:pasien'])->prefix('pasien')->name('pasien.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'pasienDashboard'])->name('dashboard');
-    
-    // Pastikan parameter pertamanya 'poli', BUKAN 'pasien.poli'
+
     Route::resource('poli', PoliController::class)->only(['index', 'show']);
-    
-    // Pastikan parameter pertamanya 'daftar-poli', BUKAN 'pasien.daftar-poli'
     Route::resource('daftar-poli', DaftarPoliController::class)->only(['index', 'create', 'store']);
-    
-    // Pastikan parameter pertamanya 'periksa', BUKAN 'pasien.periksa'
     Route::resource('periksa', PasienPeriksaController::class)->only(['index', 'show']);
+
+    // Fitur 3: Riwayat Pendaftaran
+    Route::resource('riwayat', RiwayatController::class)->only(['index', 'show']);
+
+    // Fitur 6: Pembayaran
+    Route::get('/pembayaran', [PasienPembayaranController::class, 'index'])->name('pembayaran.index');
+    Route::post('/pembayaran/{periksa}/upload', [PasienPembayaranController::class, 'upload'])->name('pembayaran.upload');
 });
 
-// ─── Admin (PINDAHKAN KE PALING BAWAH) ───────────────────────────────────────
+// ─── Admin ────────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
     Route::resource('poliklinik', PoliklinikController::class);
-    Route::resource('dokter', DokterController::class); 
-    Route::resource('pasien', PasienController::class); // Sekarang tidak akan menelan /pasien/dashboard
+    Route::resource('dokter', DokterController::class);
+    Route::resource('pasien', PasienController::class);
     Route::resource('obat', ObatController::class);
+
+    // Fitur 5: Export Excel (Admin)
+    Route::get('/dokter/export/excel', [DokterController::class, 'export'])->name('dokter.export');
+    Route::get('/pasien/export/excel', [PasienController::class, 'export'])->name('pasien.export');
+    Route::get('/obat/export/excel', [ObatController::class, 'export'])->name('obat.export');
+
+    // Fitur 6: Verifikasi Pembayaran (Admin)
+    Route::get('/admin/pembayaran', [AdminPembayaranController::class, 'index'])->name('admin.pembayaran.index');
+    Route::post('/admin/pembayaran/{periksa}/konfirmasi', [AdminPembayaranController::class, 'konfirmasi'])->name('admin.pembayaran.konfirmasi');
+    Route::post('/admin/pembayaran/{periksa}/tolak', [AdminPembayaranController::class, 'tolak'])->name('admin.pembayaran.tolak');
 });

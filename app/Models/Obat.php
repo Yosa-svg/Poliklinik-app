@@ -11,7 +11,24 @@ class Obat extends Model
         'nama_obat',
         'kemasan',
         'harga',
+        'stok',
     ];
+
+    /**
+     * Check if stock is low (≤ 5)
+     */
+    public function isLowStock(): bool
+    {
+        return $this->stok <= 5;
+    }
+
+    /**
+     * Check if out of stock
+     */
+    public function isOutOfStock(): bool
+    {
+        return $this->stok <= 0;
+    }
 
     public function detailPeriksa()
     {

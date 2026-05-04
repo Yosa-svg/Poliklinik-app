@@ -51,7 +51,7 @@
                         <h2 class="font-bold text-white text-sm">Edit Hasil Pemeriksaan</h2>
                     </div>
                     <div class="p-5">
-                        <form action="{{ route('dokter.periksa.update', $periksa) }}" method="POST" class="space-y-4">
+                        <form action="{{ route('dokter.periksa.update', ['dokter' => auth()->id(), 'periksa' => $periksa->id]) }}" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
 
@@ -92,8 +92,11 @@
                         <h2 class="font-bold text-white text-sm">Hasil Pemeriksaan</h2>
                     </div>
                     <div class="p-5">
-                        <form action="{{ route('dokter.periksa.store', $daftarPoli) }}" method="POST" class="space-y-4">
+                        <form action="{{ route('dokter.periksa.store', ['dokter' => auth()->id()]) }}" method="POST" class="space-y-4">
                             @csrf
+                            {{-- WAJIB: kirim id_daftar_poli ke controller --}}
+                            <input type="hidden" name="id_daftar_poli" value="{{ $daftarPoli->id }}">
+
                             <div>
                                 <label for="catatan" class="block text-sm font-semibold text-gray-700 mb-1">Catatan Pemeriksaan <span class="text-red-500">*</span></label>
                                 <textarea name="catatan" id="catatan" rows="6" required
@@ -141,7 +144,7 @@
                                             <p class="font-semibold text-gray-800 text-sm">{{ $detail->obat->nama_obat }}</p>
                                             <p class="text-xs text-gray-400">{{ $detail->obat->kemasan }}</p>
                                         </div>
-                                        <form action="{{ route('dokter.periksa.detail.destroy', $detail) }}" method="POST">
+                                        <form action="{{ route('dokter.periksa.detail.destroy', ['dokter' => auth()->id(), 'periksa' => $periksa->id, 'detail' => $detail->id]) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button"
@@ -161,7 +164,7 @@
                         </div>
 
                         <div class="border-t border-gray-100 pt-3">
-                            <form action="{{ route('dokter.periksa.detail.store', $periksa) }}" method="POST" class="space-y-2">
+                            <form action="{{ route('dokter.periksa.detail.store', ['dokter' => auth()->id(), 'periksa' => $periksa->id]) }}" method="POST" class="space-y-2">
                                 @csrf
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">
                                     <i class="fas fa-plus mr-1"></i>Tambah Obat

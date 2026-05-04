@@ -12,7 +12,12 @@ class Periksa extends Model
         'tgl_periksa',
         'catatan',
         'biaya_periksa',
-        
+        'bukti_bayar',
+        'status_bayar',
+    ];
+
+    protected $casts = [
+        'tgl_periksa' => 'datetime',
     ];
 
     public function daftarPoli()
@@ -25,5 +30,25 @@ class Periksa extends Model
         return $this->hasMany(DetailPeriksa::class, 'id_periksa');
     }
 
+    /**
+     * Get total biaya including medicines
+     */
+    public function getTotalBiayaAttribute(): int
+    {
+        $biayaObat = $this->detailPeriksa->sum(fn($d) => $d->obat?->harga ?? 0);
+        return ($this->biaya_periksa ?? 0) + $biayaObat;
+    }
 
+    /**
+     * Status label helper
+     */
+    public function getStatusBayarLabelAttribute(): string
+    {
+        return match ($this->status_bayar) {
+            'belum_bayar'          => 'Belum Bayar',
+            'menunggu_verifikasi'  => 'Menunggu Verifikasi',
+            'lunas'                => 'Lunas',
+            default                => 'Tidak Diketahui',
+        };
+    }
 }

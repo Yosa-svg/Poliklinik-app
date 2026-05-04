@@ -7,10 +7,16 @@
             </h1>
             <p class="text-gray-500 text-sm mt-1">Kelola data dokter yang terdaftar.</p>
         </div>
-        <a href="{{ route('dokter.create') }}"
-            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200">
-            <i class="fas fa-plus"></i> Tambah Dokter
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('dokter.export') }}"
+                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+            <a href="{{ route('dokter.create') }}"
+                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all duration-200">
+                <i class="fas fa-plus"></i> Tambah Dokter
+            </a>
+        </div>
     </div>
 
     <x-flash-alert />

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Dokter;
 use App\Http\Controllers\Controller;
 use App\Models\JadwalPeriksa;
 use Illuminate\Http\Request;
+use App\Exports\JadwalPeriksaExport;
+use App\Exports\RiwayatPasienExport;
 
 class JadwalPeriksaController extends Controller
 {
@@ -119,5 +121,18 @@ class JadwalPeriksaController extends Controller
         return redirect()->route('jadwal-periksa.index')
             ->with('message', 'Jadwal periksa berhasil dihapus!')
             ->with('type', 'success');
+    }
+
+    /**
+     * Export jadwal periksa to Excel.
+     */
+    public function export()
+    {
+        return (new JadwalPeriksaExport(auth()->id()))->download();
+    }
+
+    public function exportRiwayat()
+    {
+        return (new RiwayatPasienExport(auth()->id()))->download();
     }
 }
