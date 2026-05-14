@@ -1,6 +1,34 @@
+{{--
+    ============================================================
+    resources/views/admin/obat/edit.blade.php
+    ============================================================
+    PERAN (MVC)  : View — halaman UPDATE (form edit data obat)
+    CONTROLLER   : ObatController@edit   (tampilkan form berisi data lama)
+                   ObatController@update (proses simpan perubahan)
+    ROUTE TAMPIL : GET /obat/{obat}/edit  (obat.edit)
+    ROUTE SUBMIT : PUT /obat/{obat}       (obat.update)
+
+    DATA DITERIMA: $obat → objek Obat dari database (data lama)
+
+    PERBEDAAN DENGAN create.blade.php:
+    - value="" setiap input sudah terisi dari data $obat (bukan kosong)
+    - Form menggunakan @method('PUT') karena update memakai method PUT
+    - Action form diarahkan ke route 'obat.update' dengan ID obat
+
+    ALUR:
+    1. Admin klik "Edit" di halaman index
+    2. Browser membuka halaman ini (GET /obat/{id}/edit)
+    3. Controller inject objek $obat via Route Model Binding
+    4. Form tampil dengan nilai lama di setiap field
+    5. Admin mengubah data dan klik "Update"
+    6. Form di-submit ke PUT /obat/{id} → update() memvalidasi & menyimpan
+    7. Redirect ke index dengan notifikasi sukses
+    ============================================================
+--}}
 <x-layouts.app title="Edit Obat">
     <div class="max-w-2xl mx-auto">
 
+        {{-- ── HEADER HALAMAN ─────────────────────────────────────── --}}
         <div class="flex items-center gap-3 mb-6">
             <a href="{{ route('obat.index') }}" class="text-gray-400 hover:text-blue-600 transition-colors">
                 <i class="fas fa-arrow-left"></i>
@@ -12,45 +40,91 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            {{--
+                FORM EDIT OBAT
+                - action: route 'obat.update' dengan ID → PUT /obat/{id}
+                - method="POST": HTML hanya mendukung GET dan POST
+                - @method('PUT'): Laravel membaca hidden field _method=PUT
+                  untuk memetakan ke method update() di controller
+                  (ini disebut "HTTP Method Spoofing")
+                - @csrf: token keamanan wajib ada di setiap form POST
+            --}}
             <form action="{{ route('obat.update', $obat->id) }}" method="POST" class="space-y-5">
                 @csrf
                 @method('PUT')
 
+                {{-- ── BARIS 1: Nama Obat & Kemasan ──────────────────── --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                    {{-- Field: Nama Obat --}}
                     <div>
-                        <label for="nama_obat" class="block text-sm font-semibold text-gray-700 mb-1">Nama Obat <span class="text-red-500">*</span></label>
+                        <label for="nama_obat" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Nama Obat <span class="text-red-500">*</span>
+                        </label>
+                        {{--
+                            value="{{ old('nama_obat', $obat->nama_obat) }}":
+                            - Argumen pertama old() → key session flash
+                            - Argumen kedua ($obat->nama_obat) → nilai default
+                              (ditampilkan pertama kali form dibuka)
+                            - Jika form gagal validasi dan dikembalikan,
+                              old() mengembalikan nilai yang terakhir diketik,
+                              BUKAN nilai dari database lagi.
+                        --}}
                         <input type="text" name="nama_obat" id="nama_obat" value="{{ old('nama_obat', $obat->nama_obat) }}" required
                             class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('nama_obat') border-red-400 bg-red-50 @enderror">
                         @error('nama_obat') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
+
+                    {{-- Field: Kemasan --}}
                     <div>
-                        <label for="kemasan" class="block text-sm font-semibold text-gray-700 mb-1">Kemasan <span class="text-red-500">*</span></label>
+                        <label for="kemasan" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Kemasan <span class="text-red-500">*</span>
+                        </label>
                         <input type="text" name="kemasan" id="kemasan" value="{{ old('kemasan', $obat->kemasan) }}" placeholder="Contoh: Strip, Botol, Tube" required
                             class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('kemasan') border-red-400 bg-red-50 @enderror">
                         @error('kemasan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
+                {{-- ── BARIS 2: Harga & Stok ───────────────────────────── --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                    {{-- Field: Harga --}}
                     <div>
-                        <label for="harga" class="block text-sm font-semibold text-gray-700 mb-1">Harga (Rp) <span class="text-red-500">*</span></label>
+                        <label for="harga" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Harga (Rp) <span class="text-red-500">*</span>
+                        </label>
+                        {{-- Nilai awal = harga dari database ($obat->harga) --}}
                         <input type="number" name="harga" id="harga" value="{{ old('harga', $obat->harga) }}" required min="0" step="1"
                             class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('harga') border-red-400 bg-red-50 @enderror">
                         @error('harga') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
+
+                    {{-- Field: Stok --}}
                     <div>
-                        <label for="stok" class="block text-sm font-semibold text-gray-700 mb-1">Stok <span class="text-red-500">*</span></label>
+                        <label for="stok" class="block text-sm font-semibold text-gray-700 mb-1">
+                            Stok <span class="text-red-500">*</span>
+                        </label>
+                        {{--
+                            $obat->stok ?? 0:
+                            Operator null coalescing (??) → jika $obat->stok bernilai NULL,
+                            gunakan 0 sebagai fallback. Ini defensive programming untuk
+                            mengantisipasi data lama yang mungkin belum punya kolom stok.
+                        --}}
                         <input type="number" name="stok" id="stok" value="{{ old('stok', $obat->stok ?? 0) }}" required min="0"
                             class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-all @error('stok') border-red-400 bg-red-50 @enderror">
                         @error('stok') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
+                {{-- ── TOMBOL AKSI ──────────────────────────────────────── --}}
                 <div class="flex items-center gap-3 pt-2">
+                    {{-- Tombol Update → submit form ke PUT /obat/{id} --}}
                     <button type="submit"
                         class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-all">
                         <i class="fas fa-save"></i> Update
                     </button>
+                    {{-- Tombol Kembali → batal tanpa menyimpan, kembali ke index --}}
                     <a href="{{ route('obat.index') }}"
                         class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm px-5 py-2.5 rounded-xl transition-all">
                         <i class="fas fa-arrow-left"></i> Kembali
